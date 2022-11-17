@@ -36,6 +36,8 @@ class CarState(CarStateBase):
     self.prev_cruiseState_enabled = False
     self.prev_acc_mads_combo = None
 
+    self.has_epb = True
+    
   def update(self, cp, cp_cam, cp_body):
     ret = car.CarState.new_message()
 
@@ -150,6 +152,7 @@ class CarState(CarStateBase):
                         cp.vl["BodyInfo"]["DOOR_OPEN_RL"],
                         cp.vl["BodyInfo"]["DOOR_OPEN_FR"],
                         cp.vl["BodyInfo"]["DOOR_OPEN_FL"]])
+    self.throttle_msg = copy.copy(cp.vl["Throttle"])
 
     if self.car_fingerprint in PREGLOBAL_CARS:
       self.cruise_button = cp_cam.vl["ES_Distance"]["Cruise_Button"]
@@ -157,7 +160,9 @@ class CarState(CarStateBase):
     else:
       ret.cruiseState.nonAdaptive = cp_cam.vl["ES_DashStatus"]["Conventional_Cruise"] == 1
       ret.cruiseState.standstill = cp_cam.vl["ES_DashStatus"]["Cruise_State"] == 3
+      self.cruise_state = cp_cam.vl["ES_DashStatus"]["Cruise_State"]
       ret.stockFcw = cp_cam.vl["ES_LKAS_State"]["LKAS_Alert"] == 2
+      self.brake_pedal_msg = copy.copy(cp.vl["Brake_Pedal"])
       self.es_lkas_msg = copy.copy(cp_cam.vl["ES_LKAS_State"])
 
     ret.steerFaultTemporary = False
@@ -171,7 +176,9 @@ class CarState(CarStateBase):
           ret.steerFaultTemporary = cp.vl["Steering_Torque"]["Steer_Warning"] == 1
 
     cp_es_distance = cp_body if self.car_fingerprint in GLOBAL_GEN2 else cp_cam
+    self.car_follow = cp_es_distance.vl["ES_Distance"]["Car_Follow"]
     self.es_distance_msg = copy.copy(cp_es_distance.vl["ES_Distance"])
+    self.close_distance = cp_es_distance.vl["ES_Distance"]["Close_Distance"]
     self.es_dashstatus_msg = copy.copy(cp_cam.vl["ES_DashStatus"])
 
     return ret
@@ -269,6 +276,24 @@ class CarState(CarStateBase):
         checks += CarState.get_common_global_signals()[1]
 
       signals += [
+        ("COUNTER", "Throttle"),
+        ("Signal1", "Throttle"),
+        ("Engine_RPM", "Throttle"),
+        ("Signal2", "Throttle"),
+        ("Throttle_Pedal", "Throttle"),
+        ("Throttle_Cruise", "Throttle"),
+        ("Throttle_Combo", "Throttle"),
+        ("Signal1", "Throttle"),
+        ("Off_Accel", "Throttle"),
+
+        ("COUNTER", "Brake_Pedal"),
+        ("Signal1", "Brake_Pedal"),
+        ("Speed", "Brake_Pedal"),
+        ("Signal2", "Brake_Pedal"),
+        ("Brake_Lights", "Brake_Pedal"),
+        ("Signal3", "Brake_Pedal"),
+        ("Signal4", "Brake_Pedal"),
+
         ("Steer_Warning", "Steering_Torque"),
         ("UNITS", "Dashlights"),
       ]
@@ -279,6 +304,19 @@ class CarState(CarStateBase):
       ]
     else:
       signals += [
+        ("Throttle_Pedal", "Throttle"),
+        ("COUNTER", "Throttle"),
+        ("Signal1", "Throttle"),
+        ("Not_Full_Throttle", "Throttle"),
+        ("Signal2", "Throttle"),
+        ("Engine_RPM", "Throttle"),
+        ("Off_Throttle", "Throttle"),
+        ("Signal3", "Throttle"),
+        ("Throttle_Cruise", "Throttle"),
+        ("Throttle_Combo", "Throttle"),
+        ("Throttle_Body", "Throttle"),
+        ("Off_Throttle_2", "Throttle"),
+        ("Signal4", "Throttle"),
         ("FL", "Wheel_Speeds"),
         ("FR", "Wheel_Speeds"),
         ("RL", "Wheel_Speeds"),
@@ -286,10 +324,15 @@ class CarState(CarStateBase):
         ("UNITS", "Dash_State2"),
         ("Cruise_On", "CruiseControl"),
         ("Cruise_Activated", "CruiseControl"),
+        ("Steering_Angle", "Steering"),
       ]
       checks += [
+        ("Throttle", 100),
         ("Wheel_Speeds", 50),
         ("Dash_State2", 1),
+        ("BodyInfo", 1),
+        ("CruiseControl", 50),
+        ("Steering", 50),
       ]
 
       if CP.carFingerprint == CAR.FORESTER_PREGLOBAL:
@@ -313,6 +356,7 @@ class CarState(CarStateBase):
       signals = [
         ("Cruise_Set_Speed", "ES_DashStatus"),
         ("Not_Ready_Startup", "ES_DashStatus"),
+        ("Car_Follow", "ES_DashStatus"),
 
         ("Cruise_Throttle", "ES_Distance"),
         ("Signal1", "ES_Distance"),
@@ -341,7 +385,7 @@ class CarState(CarStateBase):
       ]
     else:
       signals = [
-        ("Counter", "ES_DashStatus"),
+        ("COUNTER", "ES_DashStatus"),
         ("PCB_Off", "ES_DashStatus"),
         ("LDW_Off", "ES_DashStatus"),
         ("Signal1", "ES_DashStatus"),

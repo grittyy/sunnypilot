@@ -19,6 +19,8 @@ class CarControllerParams:
     self.STEER_DRIVER_ALLOWANCE = 60   # allowed driver torque before start limiting
     self.STEER_DRIVER_MULTIPLIER = 50  # weight driver torque heavily
     self.STEER_DRIVER_FACTOR = 1       # from dbc
+    self.ACC_MIN_DIST = 3              # stop and go min distance threshold
+    self.ACC_MAX_DIST = 4.5            # stop and go max distance threshold
 
     if CP.carFingerprint in GLOBAL_GEN2:
       self.STEER_MAX = 1000
@@ -517,7 +519,7 @@ DBC = {
 
 GLOBAL_GEN2 = (CAR.OUTBACK, CAR.LEGACY)
 PREGLOBAL_CARS = (CAR.FORESTER_PREGLOBAL, CAR.LEGACY_PREGLOBAL, CAR.OUTBACK_PREGLOBAL, CAR.OUTBACK_PREGLOBAL_2018)
-
+GLOBAL_CARS_SNG = (CAR.ASCENT, CAR.IMPREZA, CAR.IMPREZA_2020, CAR.FORESTER)
 
 def main():
   for member, value in vars(CAR).items():
